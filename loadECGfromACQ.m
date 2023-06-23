@@ -264,4 +264,4 @@ disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
 %% Signal for saving
 
 % Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
-save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
+%save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
