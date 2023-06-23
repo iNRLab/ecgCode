@@ -1,7 +1,7 @@
 %function loadECGfromACQ()
 clear all
 
-% Open the GUI for file selection
+% Open the GUI for file selection - select ACQ exported .mat file with physio data)
 [filename, pathname] = uigetfile('*.mat', 'Select a MAT-file', 'MultiSelect', 'on');
 
 % Check if a file is selected
@@ -150,5 +150,5 @@ legend('Original', 'Filtered');
 
 % Signal for saving
 
-% Save signals into a new .mat file
+% Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
 save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
