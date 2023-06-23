@@ -1,5 +1,8 @@
 %function loadECGfromACQ()
+
+%% Clear workspace
 clear all
+close all
 
 %% Load ECG data file
 % Open the GUI for file selection - select ACQ exported .mat file with physio data)
@@ -204,6 +207,59 @@ title('Filtered ECG Signal with Labeled R Peaks');
 xlabel('Time (s)');
 ylabel('Voltage (mV)');
 legend('Filtered ECG', 'R Peaks');
+
+%% Heart Rate Variability Analysis (values not correct)
+
+% Calculate R-R intervals using the global R peak locations
+rr_intervals = diff(locs) / fs;
+
+% Calculate average heart rate (beats per minute)
+heart_rate = 60 / mean(rr_intervals);
+
+% Perform additional HRV analysis (e.g., time-domain or frequency-domain analysis)
+
+% Time-domain HRV analysis
+% Calculate standard deviation of RR intervals (SDNN)
+sdnn = std(rr_intervals);
+
+% Calculate root mean square of successive RR interval differences (RMSSD)
+rmssd = sqrt(mean(diff(rr_intervals).^2));
+
+% Calculate percentage of successive RR intervals that differ by more than 50 ms (pNN50)
+pnn50 = sum(abs(diff(rr_intervals)) > 0.05) / length(rr_intervals) * 100;
+
+% Display HRV results
+disp('Heart Rate Variability Analysis Results:');
+disp(['Average Heart Rate: ', num2str(heart_rate), ' beats per minute']);
+disp(['SDNN: ', num2str(sdnn), ' seconds']);
+disp(['RMSSD: ', num2str(rmssd), ' seconds']);
+disp(['pNN50: ', num2str(pnn50), ' %']);
+
+% Frequency-domain HRV analysis
+% Compute power spectral density (PSD) of RR intervals
+[psd, freq] = pwelch(rr_intervals, [], [], [], fs);
+
+% Extract frequency components of interest
+lf_band = freq >= 0.04 & freq <= 0.15;
+hf_band = freq > 0.15 & freq <= 0.4;
+
+% Calculate LF power
+lf_power = sum(psd(lf_band)) * (fs/length(psd));
+
+% Calculate HF power
+hf_power = sum(psd(hf_band)) * (fs/length(psd));
+
+% Calculate total power
+total_power = sum(psd) * (fs/length(psd));
+
+% Calculate LF/HF ratio
+lf_hf_ratio = lf_power / hf_power;
+
+% Display frequency-domain HRV results
+disp(['LF Power: ', num2str(lf_power)]);
+disp(['HF Power: ', num2str(hf_power)]);
+disp(['Total Power: ', num2str(total_power)]);
+disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
 
 %% Signal for saving
 

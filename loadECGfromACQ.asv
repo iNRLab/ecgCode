@@ -154,7 +154,7 @@ xlabel('Time (ms)');
 ylabel('Voltage (mV)');
 legend('Original', 'Filtered');
 
-%% Label R peaks in filtered ECG
+%% Label R peaks in filtered ECG (todo still not optimized)
 
 % Find R peaks in the filtered ECG signal
 [pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
@@ -182,17 +182,83 @@ window_samples = window_duration * fs;
 % Compute the end index of the window
 end_idx = min(start_idx + window_samples - 1, length(ecg_filtered));
 
+% Extract the filtered ECG signal within the specified window
+window_ecg = ecg_filtered(start_idx:end_idx);
+
+% Find the R peaks within the specified window
+[pks_window, locs_window] = findpeaks(window_ecg, 'MinPeakHeight', min(window_ecg) + 0.5 * (max(window_ecg) - min(window_ecg)), 'MinPeakDistance', 0.5 * fs);
+
+% Adjust the R peak locations to match the global time index
+window_locs = locs_window + (start_idx - 1);
+
+% Convert the adjusted R peak locations to the corresponding time values
+window_time = t(window_locs) / 1000;  % Convert to seconds
+
 % Plot the filtered ECG signal within the specified window
 figure;
-plot(t(start_idx:end_idx), ecg_filtered(start_idx:end_idx));
+plot(t(start_idx:end_idx) / 1000, ecg_filtered(start_idx:end_idx));
 hold on;
-plot(t(start_idx:end_idx), ecg_filtered(start_idx:end_idx), 'Color', [0.5, 0.5, 0.5]);
-plot(x_locs(x_locs >= t(start_idx) & x_locs <= t(end_idx)), pks(x_locs >= t(start_idx) & x_locs <= t(end_idx)), 'ro', 'MarkerSize', 8);
+plot(window_time, pks_window, 'ro', 'MarkerSize', 8);
 hold off;
 title('Filtered ECG Signal with Labeled R Peaks');
 xlabel('Time (s)');
 ylabel('Voltage (mV)');
-legend('Filtered ECG','R Peaks');
+legend('Filtered ECG', 'R Peaks');
+
+%% Heart Rate Variability Analysis
+% Calculate R-R intervals using the global R peak locations
+rr_intervals = diff(x_locs) / fs;
+
+% Calculate average heart rate (beats per minute)
+heart_rate = 60 / mean(rr_intervals);
+
+% Perform additional HRV analysis (e.g., time-domain or frequency-domain analysis)
+
+%% Time-domain HRV analysis
+% Calculate standard deviation of RR intervals (SDNN)
+sdnn = std(rr_intervals);
+
+% Calculate root mean square of successive RR interval differences (RMSSD)
+rmssd = sqrt(mean(diff(rr_intervals).^2));
+
+% Calculate percentage of successive RR intervals that differ by more than 50 ms (pNN50)
+pnn50 = sum(abs(diff(rr_intervals)) > 0.05) / (length(rr_intervals) - 1) * 100;
+
+% Display HRV results
+disp('Heart Rate Variability Analysis Results:');
+disp(['Average Heart Rate: ', num2str(heart_rate), ' beats per minute']);
+disp(['SDNN: ', num2str(sdnn), ' seconds']);
+disp(['RMSSD: ', num2str(rmssd), ' seconds']);
+disp(['pNN50: ', num2str(pnn50), ' %']);
+
+%% Frequency-domain HRV analysis
+% Compute power spectral density (PSD) of RR intervals
+[psd, freq] = pwelch(rr_intervals, [], [], [], fs);
+
+% Extract frequency components of interest
+lf_band = freq >= 0.04 & freq <= 0.15;
+hf_band = freq > 0.15 & freq <= 0.4;
+
+% Calculate LF power
+lf_power = sum(psd(lf_band));
+
+% Calculate HF power
+hf_power = sum(psd(hf_band));
+
+% Calculate total power
+total_power = sum(psd);
+
+% Calculate LF/HF ratio
+lf_hf_ratio = lf_power / hf_power;
+
+% Display frequency-domain HRV results
+disp(['LF Power: ', num2str(lf_power)]);
+disp(['HF Power: ', num2str(hf_power)]);
+disp(['Total Power: ', num2str(total_power)]);
+disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+
+
+
 
 %% Signal for saving
 
