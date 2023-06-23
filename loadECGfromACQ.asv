@@ -28,7 +28,7 @@ ecg = data(:, 1);
 % visualize raw input signal
 figure; 
 % ax1 = subplot(1,4,1);
-plot(ecg); 
+plot(ecg, ); 
 title('Unfiltered ECG Signal Lead I');
 xlabel('time in ms'); ylabel('voltage in mV');
 hold all; 
@@ -77,19 +77,9 @@ ecg_filtered = filtfilt(b_low, a_low, ecg_notch);
 
 % Plot filtered signal
 figure; 
-plot(ecg_filtered); 
+plot(ecg_filtered, 'LineWidth', 2); 
 title('Filtered ECG Signal Lead I');
 xlabel('time in ms'); ylabel('voltage in mV');
-
-% Plot original and filtered signal in the same figure
-figure; 
-hold on;
-plot(ecg);
-plot(ecg_filtered);
-title('Original and Filtered ECG Signals');
-xlabel('time in ms'); ylabel('voltage in mV');
-legend('Unfiltered ECG', 'Filtered ECG');
-hold off;
 
 % Compute the power spectral density of the filtered ECG signal
 [pxx_filt, f_filt] = pwelch(ecg_filtered, [], [], [], fs, 'onesided');
