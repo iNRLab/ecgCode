@@ -1,4 +1,5 @@
 %function loadECGfromACQ()
+clear all
 
 % Open the GUI for file selection
 [filename, pathname] = uigetfile('*.mat', 'Select a MAT-file', 'MultiSelect', 'on');
@@ -20,7 +21,7 @@ load(fullfile(pathname, filename));
 cd(pathname)
 
 % Display the size of loaded data
-disp(size(data))
+disp(size(data));
 
 % load ECG data
 ecg = data(:, 1);
@@ -101,6 +102,51 @@ grid on;
 title('Power Spectral Density of Filtered ECG Signal');
 xlabel('Frequency (Hz)');
 ylabel('PSD (dB/Hz)');
+
+% Define time vector
+t = (0:length(ecg)-1) / fs * 1000;  % Convert to milliseconds
+
+% Choose a starting point for the plot (in ms)
+start_time = 5000;  % For example
+
+% Find the corresponding index for the start time
+start_idx = find(t >= start_time, 1);
+
+% Compute the index for the end of the 2000ms window
+end_idx = start_idx + 2000 * fs / 1000 - 1;
+
+% Make sure end_idx doesn't exceed the length of the signal
+end_idx = min(end_idx, length(ecg));
+
+% Plot original ECG signal over 2000ms window
+figure;
+plot(t(start_idx:end_idx), ecg(start_idx:end_idx));
+title('Original ECG Signal over 2000ms Window');
+xlabel('Time (ms)');
+ylabel('Voltage (mV)');
+
+% Plot filtered ECG signal over 2000ms window
+figure;
+plot(t(start_idx:end_idx), ecg_filtered(start_idx:end_idx));
+title('Filtered ECG Signal over 2000ms Window');
+xlabel('Time (ms)');
+ylabel('Voltage (mV)');
+
+% Create a new figure
+figure;
+
+% Plot original ECG signal over 2000ms window
+plot(t(start_idx:end_idx), ecg(start_idx:end_idx));
+hold on;
+
+% Plot filtered ECG signal over 2000ms window
+plot(t(start_idx:end_idx), ecg_filtered(start_idx:end_idx));
+
+% Add title, labels, and legend
+title('Original and Filtered ECG Signals over 2000ms Window');
+xlabel('Time (ms)');
+ylabel('Voltage (mV)');
+legend('Original', 'Filtered');
 
 % Signal for saving
 
