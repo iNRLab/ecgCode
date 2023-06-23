@@ -154,7 +154,7 @@ xlabel('Time (ms)');
 ylabel('Voltage (mV)');
 legend('Original', 'Filtered');
 
-%% Label R peaks in filtered ECG (todo still not optimized)
+%% Label R peaks in filtered ECG
 
 % Find R peaks in the filtered ECG signal
 [pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
@@ -182,28 +182,17 @@ window_samples = window_duration * fs;
 % Compute the end index of the window
 end_idx = min(start_idx + window_samples - 1, length(ecg_filtered));
 
-% Extract the filtered ECG signal within the specified window
-window_ecg = ecg_filtered(start_idx:end_idx);
-
-% Find the R peaks within the specified window
-[pks_window, locs_window] = findpeaks(window_ecg, 'MinPeakHeight', min(window_ecg) + 0.5 * (max(window_ecg) - min(window_ecg)), 'MinPeakDistance', 0.5 * fs);
-
-% Adjust the R peak locations to match the global time index
-window_locs = locs_window + (start_idx - 1);
-
-% Convert the adjusted R peak locations to the corresponding time values
-window_time = t(window_locs) / 1000;  % Convert to seconds
-
 % Plot the filtered ECG signal within the specified window
 figure;
-plot(t(start_idx:end_idx) / 1000, ecg_filtered(start_idx:end_idx));
+plot(t(start_idx:end_idx), ecg_filtered(start_idx:end_idx));
 hold on;
-plot(window_time, pks_window, 'ro', 'MarkerSize', 8);
+plot(t(start_idx:end_idx), ecg_filtered(start_idx:end_idx), 'Color', [0.5, 0.5, 0.5]);
+plot(x_locs(x_locs >= t(start_idx) & x_locs <= t(end_idx)), pks(x_locs >= t(start_idx) & x_locs <= t(end_idx)), 'ro', 'MarkerSize', 8);
 hold off;
 title('Filtered ECG Signal with Labeled R Peaks');
 xlabel('Time (s)');
 ylabel('Voltage (mV)');
-legend('Filtered ECG', 'R Peaks');
+legend('Filtered ECG','R Peaks');
 
 %% Signal for saving
 
