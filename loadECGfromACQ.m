@@ -57,10 +57,10 @@ xlabel('Frequency (Hz)');
 ylabel('PSD (dB/Hz)');
 
 %% Define and apply Zero-phase Butterworth IIR Bandpass Filter 
-% High-pass filter cutoff frequency (Hz)
-high_cutoff = 0.5;
+% High-pass filter cutoff frequency (Hz) (test from 0.5hz)
+high_cutoff = 0.04;
 
-% Low-pass filter cutoff frequency (Hz)
+% Low-pass filter cutoff frequency (Hz) 
 low_cutoff = 30;
 
 % Powerline frequency (Hz)
@@ -84,6 +84,16 @@ ecg_notch = filtfilt(b_notch, a_notch, ecg_high);
 
 % Apply the low-pass filter
 ecg_filtered = filtfilt(b_low, a_low, ecg_notch);
+
+% %% Test new filter
+% 
+% % Design a lowpass filter that passes frequencies below 1 Hz
+% lowpassFilter = designfilt('lowpassiir', 'PassbandFrequency', 1, ...
+%                            'StopbandFrequency', 3, 'PassbandRipple', 1, ...
+%                            'StopbandAttenuation', 60, 'SampleRate', fs);
+% 
+% % Apply the filter to your data
+% ecg_filtered = filtfilt(lowpassFilter, ecg);
 
 % Plot filtered signal
 figure; 

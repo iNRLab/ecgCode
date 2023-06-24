@@ -1,5 +1,8 @@
 %function loadECGfromACQ()
+
+%% Clear workspace
 clear all
+close all
 
 %% Load ECG data file
 % Open the GUI for file selection - select ACQ exported .mat file with physio data)
@@ -55,12 +58,12 @@ ylabel('PSD (dB/Hz)');
 
 %% Define and apply Zero-phase Butterworth IIR Bandpass Filter 
 % High-pass filter cutoff frequency (Hz)
-high_cutoff = 0.5;
+high_cutoff = 1;
 
 % Low-pass filter cutoff frequency (Hz)
-low_cutoff = 30;
+low_cutoff = 3;
 
-% Powerline frequency (Hz)
+% Powerline frequency (Hz) - may be unnecessary if using 1-3 hz bpf
 powerline_freq = 60;
 
 % Design the Butterworth filters
@@ -205,16 +208,17 @@ xlabel('Time (s)');
 ylabel('Voltage (mV)');
 legend('Filtered ECG', 'R Peaks');
 
-%% Heart Rate Variability Analysis
+%% Heart Rate Variability Analysis (values not correct)
+
 % Calculate R-R intervals using the global R peak locations
-rr_intervals = diff(x_locs) / fs;
+rr_intervals = diff(locs) / fs;
 
 % Calculate average heart rate (beats per minute)
 heart_rate = 60 / mean(rr_intervals);
 
 % Perform additional HRV analysis (e.g., time-domain or frequency-domain analysis)
 
-%% Time-domain HRV analysis
+% Time-domain HRV analysis
 % Calculate standard deviation of RR intervals (SDNN)
 sdnn = std(rr_intervals);
 
@@ -222,7 +226,7 @@ sdnn = std(rr_intervals);
 rmssd = sqrt(mean(diff(rr_intervals).^2));
 
 % Calculate percentage of successive RR intervals that differ by more than 50 ms (pNN50)
-pnn50 = sum(abs(diff(rr_intervals)) > 0.05) / (length(rr_intervals) - 1) * 100;
+pnn50 = sum(abs(diff(rr_intervals)) > 0.05) / length(rr_intervals) * 100;
 
 % Display HRV results
 disp('Heart Rate Variability Analysis Results:');
@@ -231,7 +235,7 @@ disp(['SDNN: ', num2str(sdnn), ' seconds']);
 disp(['RMSSD: ', num2str(rmssd), ' seconds']);
 disp(['pNN50: ', num2str(pnn50), ' %']);
 
-%% Frequency-domain HRV analysis
+% Frequency-domain HRV analysis
 % Compute power spectral density (PSD) of RR intervals
 [psd, freq] = pwelch(rr_intervals, [], [], [], fs);
 
@@ -240,13 +244,13 @@ lf_band = freq >= 0.04 & freq <= 0.15;
 hf_band = freq > 0.15 & freq <= 0.4;
 
 % Calculate LF power
-lf_power = sum(psd(lf_band));
+lf_power = sum(psd(lf_band)) * (fs/length(psd));
 
 % Calculate HF power
-hf_power = sum(psd(hf_band));
+hf_power = sum(psd(hf_band)) * (fs/length(psd));
 
 % Calculate total power
-total_power = sum(psd);
+total_power = sum(psd) * (fs/length(psd));
 
 % Calculate LF/HF ratio
 lf_hf_ratio = lf_power / hf_power;
@@ -257,10 +261,7 @@ disp(['HF Power: ', num2str(hf_power)]);
 disp(['Total Power: ', num2str(total_power)]);
 disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
 
-
-
-
 %% Signal for saving
 
 % Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
-save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
+%save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
