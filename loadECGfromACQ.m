@@ -121,10 +121,10 @@ ecg_high = filtfilt(b_high, a_high, ecg);
 % Apply the low-pass filter
 ecg_filtered = filtfilt(b_low, a_low, ecg_high);
 
-% % Adjust the baseline voltage
-% ecg_baseline = min(ecg_filtered);
-% ecg_filtered_adjusted = ecg_filtered - ecg_baseline;
-% ecg_filtered = ecg_filtered_adjusted;
+% Adjust the baseline voltage
+ecg_baseline = min(ecg_filtered);
+ecg_filtered_adjusted = ecg_filtered - ecg_baseline;
+ecg_filtered = ecg_filtered_adjusted;
 
 % Plot the adjusted filtered ECG signal
 figure;
@@ -218,7 +218,9 @@ legend('Original', 'Filtered');
 %% Label R peaks in filtered ECG (todo still not optimized)
 
 % Find R peaks in the filtered ECG signal
-[pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
+% [pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
+
+[pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs, 'Annotate', 'extents');
 
 % Compute the correct x-axis values for the R peaks
 x_locs = (locs - 1) / fs;
@@ -268,14 +270,12 @@ legend('Filtered ECG', 'R Peaks');
 
 %% Compute R-R interval tachogram (values not correct)
 
-% Find R peaks in the filtered ECG signal
-[pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
-
 % Compute the time differences between consecutive R peaks (R-R intervals) in milliseconds
-rr_intervals = diff(locs) * 1000 / fs;
+% rr_intervals = diff(locs) * 1000 / fs;
+%rr_intervals = diff(x_locs);
 
-% Compute the time differences between consecutive R peaks (R-R intervals) in seconds
-rr_intervals_sec = diff(locs) / fs;
+peak_locs_ms = (locs - 1) * 1000 / fs;
+rr_intervals = diff(peak_locs_ms);
 
 % Generate time vector for x-axis
 time = (locs(1:end-1) - 1) / fs;
@@ -287,50 +287,80 @@ title('R-R Interval Tachogram');
 xlabel('Time (s)');
 ylabel('R-R Interval Duration (ms)');
 
-%% Heart Rate Variability Analysis (values not correct)
+%% Filter RR Interval time series
 
-% Find R peaks in the filtered ECG signal
-[pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
+% Apply filtering to remove implausible values
+rr_intervals_filtered = rr_intervals;
+rr_intervals_filtered(rr_intervals < 500 | rr_intervals > 1800) = NaN;
 
-% Compute the time differences between consecutive R peaks (R-R intervals) in seconds
-rr_intervals = diff(locs) / fs;
+% Interpolate over removed values using cubic spline interpolation
+rr_intervals_corrected = interp1(time, rr_intervals_filtered, time, 'pchip');
 
-% Generate time vector for x-axis
-time = (locs(1:end-1) - 1) / fs;
+% Plot the corrected R-R interval tachogram
+figure;
+plot(time, rr_intervals_corrected, 'b.-');
+title('Corrected R-R Interval Tachogram');
+xlabel('Time (s)');
+ylabel('R-R Interval Duration (ms)');
 
-% Calculate average heart rate (beats per minute)
-heart_rate = 60 / mean(rr_intervals);
+%% Rerun filtering omitting noise sections
+
+% Find the indices of non-NaN values in the RR intervals
+valid_indices = find(~isnan(rr_intervals_corrected));
+
+% Exclude RR intervals greater than 1500 ms
+rr_intervals_corrected(rr_intervals_corrected > 1500) = NaN;
+
+% Extract the valid time and RR intervals
+time_valid = time(valid_indices);
+rr_intervals_valid = rr_intervals_corrected(valid_indices);
+
+% Remove NaN values from RR intervals
+rr_intervals_valid = rr_intervals_valid(~isnan(rr_intervals_valid));
+
+% Plot the corrected and valid R-R interval tachogram
+figure;
+plot(rr_intervals_valid, 'b.-');
+title('Corrected and Valid R-R Interval Tachogram');
+xlabel('Time (s)');
+ylabel('R-R Interval Duration (ms)');
+
+%% Heart rate variability analyses
 
 % Time-domain HRV analysis
+
+% Calculate average heart rate (beats per minute)
+heart_rate = 60 / (mean(rr_intervals_valid) / 1000);
+
 % Calculate standard deviation of RR intervals (SDNN)
-sdnn = std(rr_intervals);
+sdnn = std(rr_intervals_valid);
 
 % Calculate root mean square of successive RR interval differences (RMSSD)
-rmssd = sqrt(mean(diff(rr_intervals).^2));
+rmssd = sqrt(mean(diff(rr_intervals_valid).^2));
 
 % Calculate percentage of successive RR intervals that differ by more than 50 ms (pNN50)
-pnn50 = sum(abs(diff(rr_intervals)) > 0.05) / length(rr_intervals) * 100;
+pnn50 = sum(abs(diff(rr_intervals_valid)) > 50) / length(rr_intervals_valid) * 100;
 
 % Display HRV results
 disp('Heart Rate Variability Analysis Results:');
 disp(['Average Heart Rate: ', num2str(heart_rate), ' beats per minute']);
-disp(['SDNN: ', num2str(sdnn), ' seconds']);
-disp(['RMSSD: ', num2str(rmssd), ' seconds']);
+disp(['SDNN: ', num2str(sdnn), ' milliseconds']);
+disp(['RMSSD: ', num2str(rmssd), ' milliseconds']);
 disp(['pNN50: ', num2str(pnn50), ' %']);
 
 % Frequency-domain HRV analysis
 % Compute power spectral density (PSD) of RR intervals
-[psd, freq] = pwelch(rr_intervals, [], [], [], fs);
+[psd, freq] = pwelch(rr_intervals_valid, [], [], [], fs);
 
 % Extract frequency components of interest
 lf_band = freq >= 0.04 & freq <= 0.15;
 hf_band = freq > 0.15 & freq <= 0.4;
 
 % Calculate LF power
-lf_power = sum(psd(lf_band));
+lf_power = sum(psd(lf_band)) * (fs/length(psd));
 
 % Calculate HF power
-hf_power = sum(psd(hf_band));
+hf_power = sum(psd(hf_band)) * (fs/length(psd));
 
 % Calculate total power
 total_power = sum(psd);
@@ -343,6 +373,7 @@ disp(['LF Power: ', num2str(lf_power)]);
 disp(['HF Power: ', num2str(hf_power)]);
 disp(['Total Power: ', num2str(total_power)]);
 disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+
 
 %% Signal for saving
 
