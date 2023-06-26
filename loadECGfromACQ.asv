@@ -91,12 +91,12 @@ ylabel('PSD (dB/Hz)');
 
 % Define the filter parameters
 high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
-low_cutoff = 30;   % Low-pass filter cutoff frequency in Hz
+low_cutoff = 20;   % Low-pass filter cutoff frequency in Hz
 
 % Design the Butterworth filters
 [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
 [b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Apply the high-pass filter forward
 % ecg_high_forward = filter(b_high, a_high, ecg);
 % 
@@ -114,7 +114,7 @@ low_cutoff = 30;   % Low-pass filter cutoff frequency in Hz
 % % Adjust the baseline voltage
 % ecg_baseline = mean(ecg);
 % ecg_filtered = ecg_filtered_backward + ecg_baseline;
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Apply the high-pass filter
 ecg_high = filtfilt(b_high, a_high, ecg);
 
@@ -132,7 +132,7 @@ plot(ecg_filtered);
 title('Filtered ECG Signal with Adjusted Baseline');
 xlabel('Time (s)');
 ylabel('Voltage (mV)');
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %% Test new filter
 % 
 % % Design a lowpass filter that passes frequencies below 1 Hz
@@ -142,6 +142,8 @@ ylabel('Voltage (mV)');
 % 
 % % Apply the filter to your data
 % ecg_filtered = filtfilt(lowpassFilter, ecg);
+
+%ecg_filtered = ecg; 
 
 % Plot filtered signal
 figure; 
@@ -308,17 +310,28 @@ ylabel('R-R Interval Duration (ms)');
 % Find the indices of non-NaN values in the RR intervals
 valid_indices = find(~isnan(rr_intervals_corrected));
 
+% Exclude RR intervals greater than 1500 ms
+rr_intervals_corrected(rr_intervals_corrected > 1500) = NaN;
+
 % Extract the valid time and RR intervals
 time_valid = time(valid_indices);
 rr_intervals_valid = rr_intervals_corrected(valid_indices);
 
+% Remove NaN values from RR intervals
+rr_intervals_valid = rr_intervals_valid(~isnan(rr_intervals_valid));
+
+% Plot the corrected and valid R-R interval tachogram
+figure;
+plot(rr_intervals_valid, 'b.-');
+title('Corrected and Valid R-R Interval Tachogram');
+xlabel('Time (s)');
+ylabel('R-R Interval Duration (ms)');
+
+%% Time-domain HRV analysis
+
 % Calculate average heart rate (beats per minute)
 heart_rate = 60 / (mean(rr_intervals_valid) / 1000);
 
-
-%% Heart rate variability analyses
-
-% Time-domain HRV analysis
 % Calculate standard deviation of RR intervals (SDNN)
 sdnn = std(rr_intervals_valid);
 
@@ -335,32 +348,46 @@ disp(['SDNN: ', num2str(sdnn), ' milliseconds']);
 disp(['RMSSD: ', num2str(rmssd), ' milliseconds']);
 disp(['pNN50: ', num2str(pnn50), ' %']);
 
-% Frequency-domain HRV analysis
-% Compute power spectral density (PSD) of RR intervals
-[psd, freq] = pwelch(rr_intervals_valid, [], [], [], fs);
+%% Frequency-domain HRV analysis
 
-% Extract frequency components of interest
-lf_band = freq >= 0.04 & freq <= 0.15;
-hf_band = freq > 0.15 & freq <= 0.4;
+% Perform power spectral density calculation only if valid RR intervals exist
+if ~isempty(rr_intervals_valid)
+    
+   % Compute power spectral density (PSD) of RR intervals
+    [psd, freq] = pwelch(rr_intervals_valid, [], [], [], fs, 'onesided', 'power');
 
-% Calculate LF power
-lf_power = sum(psd(lf_band)) * (fs/length(psd));
+    % Define frequency bands of interest
+    lf_band = freq >= 0.04 & freq <= 0.15;
+    hf_band = freq > 0.15 & freq <= 0.4;
 
-% Calculate HF power
-hf_power = sum(psd(hf_band)) * (fs/length(psd));
+    % Calculate LF power
+    lf_power = trapz(psd(lf_band));
 
-% Calculate total power
-total_power = sum(psd);
+    % Calculate HF power
+    hf_power = trapz(psd(hf_band));
 
-% Calculate LF/HF ratio
-lf_hf_ratio = lf_power / hf_power;
+    % Calculate total power
+    total_power = trapz(psd);
 
-% Display frequency-domain HRV results
-disp(['LF Power: ', num2str(lf_power)]);
-disp(['HF Power: ', num2str(hf_power)]);
-disp(['Total Power: ', num2str(total_power)]);
-disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+    % Calculate LF/HF ratio
+    lf_hf_ratio = lf_power / hf_power;
 
+    % Display frequency-domain HRV results
+    disp(['LF Power: ', num2str(lf_power)]);
+    disp(['HF Power: ', num2str(hf_power)]);
+    disp(['Total Power: ', num2str(total_power)]);
+    disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+
+    % Plot the power spectral density (PSD) of RR intervals
+    figure;
+    plot(freq, 10*log10(psd));
+    title('Power Spectral Density (PSD) of RR Intervals');
+    xlabel('Frequency (Hz)');
+    ylabel('PSD (dB/Hz)');
+    grid on;
+else
+    disp('No valid RR intervals for power spectral density calculation.');
+end
 
 %% Signal for saving
 

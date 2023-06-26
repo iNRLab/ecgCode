@@ -91,12 +91,12 @@ ylabel('PSD (dB/Hz)');
 
 % Define the filter parameters
 high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
-low_cutoff = 30;   % Low-pass filter cutoff frequency in Hz
+low_cutoff = 20;   % Low-pass filter cutoff frequency in Hz
 
 % Design the Butterworth filters
 [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
 [b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Apply the high-pass filter forward
 % ecg_high_forward = filter(b_high, a_high, ecg);
 % 
@@ -114,7 +114,7 @@ low_cutoff = 30;   % Low-pass filter cutoff frequency in Hz
 % % Adjust the baseline voltage
 % ecg_baseline = mean(ecg);
 % ecg_filtered = ecg_filtered_backward + ecg_baseline;
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Apply the high-pass filter
 ecg_high = filtfilt(b_high, a_high, ecg);
 
@@ -132,7 +132,7 @@ plot(ecg_filtered);
 title('Filtered ECG Signal with Adjusted Baseline');
 xlabel('Time (s)');
 ylabel('Voltage (mV)');
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %% Test new filter
 % 
 % % Design a lowpass filter that passes frequencies below 1 Hz
@@ -142,6 +142,8 @@ ylabel('Voltage (mV)');
 % 
 % % Apply the filter to your data
 % ecg_filtered = filtfilt(lowpassFilter, ecg);
+
+%ecg_filtered = ecg; 
 
 % Plot filtered signal
 figure; 
@@ -348,27 +350,39 @@ disp(['pNN50: ', num2str(pnn50), ' %']);
 
 %% Frequency-domain HRV analysis
 
+    % Define the desired frequency resolution
+    frequency_resolution = 0.01; % Specify the desired frequency resolution in Hz
+
+    % Define the frequency range of interest
+    frequency_range = [0, 1]; % Specify the frequency range of interest in Hz
+
+    % Generate a higher resolution frequency vector
+    freq_points = frequency_range(1):frequency_resolution:frequency_range(2);
+
 % Perform power spectral density calculation only if valid RR intervals exist
 if ~isempty(rr_intervals_valid)
-    % Frequency-domain HRV analysis
-    % Compute power spectral density (PSD) of RR intervals
-    [psd, freq] = pwelch(rr_intervals_valid, [], [], [], fs);
+    
+    % Compute power spectral density (PSD) of RR intervals with increased resolution
+    [psd, freq] = pwelch(rr_intervals_valid, [], [], freq_points, fs);
 
-    % Extract frequency components of interest
+   % Define frequency bands of interest
     lf_band = freq >= 0.04 & freq <= 0.15;
     hf_band = freq > 0.15 & freq <= 0.4;
 
     % Calculate LF power
-    lf_power = sum(psd(lf_band)) * (fs/length(psd));
+    lf_power = trapz(psd(lf_band));
 
     % Calculate HF power
-    hf_power = sum(psd(hf_band)) * (fs/length(psd));
+    hf_power = trapz(psd(hf_band));
 
     % Calculate total power
-    total_power = sum(psd);
+    total_power = trapz(psd);
 
     % Calculate LF/HF ratio
     lf_hf_ratio = lf_power / hf_power;
+
+    % desired_frequency = 0.04;  % Desired frequency in Hz
+    % [~, index] = min(abs(freq - desired_frequency));  % Find the index of the closest frequency value
 
     % Display frequency-domain HRV results
     disp(['LF Power: ', num2str(lf_power)]);
