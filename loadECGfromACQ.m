@@ -58,33 +58,80 @@ xlabel('Frequency (Hz)');
 ylabel('PSD (dB/Hz)');
 
 %% Define and apply Zero-phase Butterworth IIR Bandpass Filter 
-% High-pass filter cutoff frequency (Hz) (test from 0.5hz)
-high_cutoff = 0.04;
 
-% Low-pass filter cutoff frequency (Hz) 
-low_cutoff = 30;
+% % High-pass filter cutoff frequency (Hz) (test from 0.5hz)
+% high_cutoff = 0.04;
+% 
+% % Low-pass filter cutoff frequency (Hz) 
+% low_cutoff = 30;
+% 
+% % Powerline frequency (Hz)
+% powerline_freq = 60;
+% 
+% % Design the Butterworth filters
+% [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
+% [b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
+% 
+% % Design the notch filter
+% % Note that 'notch' requires Signal Processing Toolbox R2016b or later
+% wo = powerline_freq/(fs/2);  
+% bw = wo/35;
+% [b_notch, a_notch] = iirnotch(wo, bw);
+% 
+% % Apply the high-pass filter
+% ecg_high = filtfilt(b_high, a_high, ecg);
+% 
+% % Apply the notch filter
+% ecg_notch = filtfilt(b_notch, a_notch, ecg_high);
+% 
+% % Apply the low-pass filter
+% ecg_filtered = filtfilt(b_low, a_low, ecg_notch);
 
-% Powerline frequency (Hz)
-powerline_freq = 60;
+%% Test new butterworth to avoid producing negative voltages
+
+% Define the filter parameters
+high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
+low_cutoff = 30;   % Low-pass filter cutoff frequency in Hz
 
 % Design the Butterworth filters
 [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
 [b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
 
-% Design the notch filter
-% Note that 'notch' requires Signal Processing Toolbox R2016b or later
-wo = powerline_freq/(fs/2);  
-bw = wo/35;
-[b_notch, a_notch] = iirnotch(wo, bw);
+% % Apply the high-pass filter forward
+% ecg_high_forward = filter(b_high, a_high, ecg);
+% 
+% % Apply the high-pass filter backward
+% ecg_high_backward = filter(b_high, a_high, ecg_high_forward(end:-1:1));
+% ecg_high_backward = ecg_high_backward(end:-1:1);
+% 
+% % Apply the low-pass filter forward
+% ecg_filtered_forward = filter(b_low, a_low, ecg_high_backward);
+% 
+% % Apply the low-pass filter backward
+% ecg_filtered_backward = filter(b_low, a_low, ecg_filtered_forward(end:-1:1));
+% ecg_filtered_backward = ecg_filtered_backward(end:-1:1);
+% 
+% % Adjust the baseline voltage
+% ecg_baseline = mean(ecg);
+% ecg_filtered = ecg_filtered_backward + ecg_baseline;
 
 % Apply the high-pass filter
 ecg_high = filtfilt(b_high, a_high, ecg);
 
-% Apply the notch filter
-ecg_notch = filtfilt(b_notch, a_notch, ecg_high);
-
 % Apply the low-pass filter
-ecg_filtered = filtfilt(b_low, a_low, ecg_notch);
+ecg_filtered = filtfilt(b_low, a_low, ecg_high);
+
+% % Adjust the baseline voltage
+% ecg_baseline = min(ecg_filtered);
+% ecg_filtered_adjusted = ecg_filtered - ecg_baseline;
+% ecg_filtered = ecg_filtered_adjusted;
+
+% Plot the adjusted filtered ECG signal
+figure;
+plot(ecg_filtered);
+title('Filtered ECG Signal with Adjusted Baseline');
+xlabel('Time (s)');
+ylabel('Voltage (mV)');
 
 % %% Test new filter
 % 
@@ -242,16 +289,17 @@ ylabel('R-R Interval Duration (ms)');
 
 %% Heart Rate Variability Analysis (values not correct)
 
-% Calculate R-R intervals using the global R peak locations in milliseconds
-rr_intervals = diff(locs) * 1000 / fs;
+% Find R peaks in the filtered ECG signal
+[pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
+
+% Compute the time differences between consecutive R peaks (R-R intervals) in seconds
+rr_intervals = diff(locs) / fs;
+
+% Generate time vector for x-axis
+time = (locs(1:end-1) - 1) / fs;
 
 % Calculate average heart rate (beats per minute)
-heart_rate = 60 / mean(rr_intervals_sec);
-
-% Display heart rate
-disp(['Average Heart Rate: ', num2str(heart_rate), ' beats per minute']);
-
-% Perform additional HRV analysis (e.g., time-domain or frequency-domain analysis)
+heart_rate = 60 / mean(rr_intervals);
 
 % Time-domain HRV analysis
 % Calculate standard deviation of RR intervals (SDNN)
@@ -279,13 +327,13 @@ lf_band = freq >= 0.04 & freq <= 0.15;
 hf_band = freq > 0.15 & freq <= 0.4;
 
 % Calculate LF power
-lf_power = sum(psd(lf_band)) * (fs/length(psd));
+lf_power = sum(psd(lf_band));
 
 % Calculate HF power
-hf_power = sum(psd(hf_band)) * (fs/length(psd));
+hf_power = sum(psd(hf_band));
 
 % Calculate total power
-total_power = sum(psd) * (fs/length(psd));
+total_power = sum(psd);
 
 % Calculate LF/HF ratio
 lf_hf_ratio = lf_power / hf_power;
