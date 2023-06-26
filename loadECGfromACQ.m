@@ -458,7 +458,8 @@ if ~isempty(rr_intervals_valid)
     % freq = (0:length(fft_data)-1) * freq_resolution;
 
     % Define the desired frequency resolution
-    frequency_resolution = 0.001; % Specify the desired frequency resolution in Hz
+    %frequency_resolution = 0.001; % Specify the desired frequency resolution in Hz
+    frequency_resolution = freq_points(2) - freq_points(1);
 
     % Generate a higher resolution frequency vector
     freq = (min_freq:frequency_resolution:max_freq);
@@ -545,7 +546,6 @@ if ~isempty(rr_intervals_valid)
 else
     disp('No valid RR intervals for frequency domain analysis.');
 end
-
 
 %% Signal for saving
 
