@@ -325,9 +325,7 @@ title('Corrected and Valid R-R Interval Tachogram');
 xlabel('Time (s)');
 ylabel('R-R Interval Duration (ms)');
 
-%% Heart rate variability analyses
-
-% Time-domain HRV analysis
+%% Time-domain HRV analysis
 
 % Calculate average heart rate (beats per minute)
 heart_rate = 60 / (mean(rr_intervals_valid) / 1000);
@@ -348,32 +346,46 @@ disp(['SDNN: ', num2str(sdnn), ' milliseconds']);
 disp(['RMSSD: ', num2str(rmssd), ' milliseconds']);
 disp(['pNN50: ', num2str(pnn50), ' %']);
 
-% Frequency-domain HRV analysis
-% Compute power spectral density (PSD) of RR intervals
-[psd, freq] = pwelch(rr_intervals_valid, [], [], [], fs);
+%% Frequency-domain HRV analysis
 
-% Extract frequency components of interest
-lf_band = freq >= 0.04 & freq <= 0.15;
-hf_band = freq > 0.15 & freq <= 0.4;
+% Perform power spectral density calculation only if valid RR intervals exist
+if ~isempty(rr_intervals_valid)
+    % Frequency-domain HRV analysis
+    % Compute power spectral density (PSD) of RR intervals
+    [psd, freq] = pwelch(rr_intervals_valid, [], [], [], fs);
 
-% Calculate LF power
-lf_power = sum(psd(lf_band)) * (fs/length(psd));
+    % Extract frequency components of interest
+    lf_band = freq >= 0.04 & freq <= 0.15;
+    hf_band = freq > 0.15 & freq <= 0.4;
 
-% Calculate HF power
-hf_power = sum(psd(hf_band)) * (fs/length(psd));
+    % Calculate LF power
+    lf_power = sum(psd(lf_band)) * (fs/length(psd));
 
-% Calculate total power
-total_power = sum(psd);
+    % Calculate HF power
+    hf_power = sum(psd(hf_band)) * (fs/length(psd));
 
-% Calculate LF/HF ratio
-lf_hf_ratio = lf_power / hf_power;
+    % Calculate total power
+    total_power = sum(psd);
 
-% Display frequency-domain HRV results
-disp(['LF Power: ', num2str(lf_power)]);
-disp(['HF Power: ', num2str(hf_power)]);
-disp(['Total Power: ', num2str(total_power)]);
-disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+    % Calculate LF/HF ratio
+    lf_hf_ratio = lf_power / hf_power;
 
+    % Display frequency-domain HRV results
+    disp(['LF Power: ', num2str(lf_power)]);
+    disp(['HF Power: ', num2str(hf_power)]);
+    disp(['Total Power: ', num2str(total_power)]);
+    disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+
+    % Plot the power spectral density (PSD) of RR intervals
+    figure;
+    plot(freq, 10*log10(psd));
+    title('Power Spectral Density (PSD) of RR Intervals');
+    xlabel('Frequency (Hz)');
+    ylabel('PSD (dB/Hz)');
+    grid on;
+else
+    disp('No valid RR intervals for power spectral density calculation.');
+end
 
 %% Signal for saving
 
