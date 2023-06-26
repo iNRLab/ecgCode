@@ -87,44 +87,44 @@ ylabel('PSD (dB/Hz)');
 % % Apply the low-pass filter
 % ecg_filtered = filtfilt(b_low, a_low, ecg_notch);
 
-%% Test new butterworth to avoid producing negative voltages
+% %% Test filter as per http://www.ijstr.org/final-print/dec2019/Digital-Iir-Filters-For-Heart-Rate-Variability-A-Comparison-Between-Butterworth-And-Elliptic-Filters.pdf
+% 
+% % Define the filter specifications
+% passband_freq = 0.8;   % Passband frequency in Hz
+% stopband_freq = 20;    % Stopband frequency in Hz
+% passband_ripple = 0;   % Passband ripple in dB
+% stopband_attenuation = 80;   % Stopband attenuation in dB
+% 
+% % Normalize the frequencies
+% normalized_passband_freq = passband_freq / (fs/2);
+% normalized_stopband_freq = stopband_freq / (fs/2);
+% 
+% % Design the Butterworth bandpass filter
+% [b, a] = butter(10, [normalized_passband_freq, normalized_stopband_freq], 'bandpass');
+% 
+% % Apply the filter to the ECG signal
+% ecg_filtered = filtfilt(b, a, ecg);
 
-% Define the filter parameters
-high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
-low_cutoff = 20;   % Low-pass filter cutoff frequency in Hz
-
-% Design the Butterworth filters
-[b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
-[b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % Apply the high-pass filter forward
-% ecg_high_forward = filter(b_high, a_high, ecg);
+% %% Test new butterworth to avoid producing negative voltages
 % 
-% % Apply the high-pass filter backward
-% ecg_high_backward = filter(b_high, a_high, ecg_high_forward(end:-1:1));
-% ecg_high_backward = ecg_high_backward(end:-1:1);
+% % Define the filter parameters
+% high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
+% low_cutoff = 60;   % Low-pass filter cutoff frequency in Hz
 % 
-% % Apply the low-pass filter forward
-% ecg_filtered_forward = filter(b_low, a_low, ecg_high_backward);
+% % Design the Butterworth filters
+% [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
+% [b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
 % 
-% % Apply the low-pass filter backward
-% ecg_filtered_backward = filter(b_low, a_low, ecg_filtered_forward(end:-1:1));
-% ecg_filtered_backward = ecg_filtered_backward(end:-1:1);
+% % Apply the high-pass filter
+% ecg_high = filtfilt(b_high, a_high, ecg);
+% 
+% % Apply the low-pass filter
+% ecg_filtered = filtfilt(b_low, a_low, ecg_high);
 % 
 % % Adjust the baseline voltage
-% ecg_baseline = mean(ecg);
-% ecg_filtered = ecg_filtered_backward + ecg_baseline;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Apply the high-pass filter
-ecg_high = filtfilt(b_high, a_high, ecg);
-
-% Apply the low-pass filter
-ecg_filtered = filtfilt(b_low, a_low, ecg_high);
-
-% Adjust the baseline voltage
-ecg_baseline = min(ecg_filtered);
-ecg_filtered_adjusted = ecg_filtered - ecg_baseline;
-ecg_filtered = ecg_filtered_adjusted;
+% ecg_baseline = min(ecg_filtered);
+% ecg_filtered_adjusted = ecg_filtered - ecg_baseline;
+% ecg_filtered = ecg_filtered_adjusted;
 
 % Plot the adjusted filtered ECG signal
 figure;
@@ -412,7 +412,9 @@ if ~isempty(rr_intervals_valid)
     lf_normalized_power = lf_power / total_power;
     hf_normalized_power = hf_power / total_power;
 
-    % Display frequency-domain HRV results
+    % Display PSD frequency-domain HRV results
+    
+    disp('PSD frequency domain analysis results.');
     disp(['LF Power: ', num2str(lf_power)]);
     disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
     disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
@@ -450,34 +452,38 @@ if ~isempty(rr_intervals_valid)
     power_spectrum = abs(fft_data).^2 / length(rr_intervals_valid);
     
     % Define the frequency range of interest
-    min_freq = 0.01;  % Minimum frequency in Hz
-    max_freq = 0.5;   % Maximum frequency in Hz
+    min_freq = 0.04;  % Minimum frequency in Hz
+    max_freq = 0.4;   % Maximum frequency in Hz
     
-    % Compute the corresponding frequency values
-    freq_resolution = fs / length(rr_intervals_valid);  % Frequency resolution
-    freq = (0:length(rr_intervals_valid)-1) * freq_resolution;
-    
+    % % Compute the corresponding frequency values
+    % freq_resolution = fs / length(fft_data);  % Frequency resolution
+    % freq = (0:length(fft_data)-1) * freq_resolution;
+
+    % Define the desired frequency resolution
+    %frequency_resolution = 0.001; % Specify the desired frequency resolution in Hz
+    frequency_resolution = freq_points(2) - freq_points(1);
+
+    % Generate a higher resolution frequency vector
+    freq = (min_freq:frequency_resolution:max_freq);
+
     % Find the indices corresponding to the frequency range of interest
     freq_indices = freq >= min_freq & freq <= max_freq;
+    
+    % Find the indices corresponding to the frequency range of interest
+    %freq_indices = freq >= min_freq & freq <= max_freq;
     
     % Extract the power spectrum and frequency values within the specified range
     power_spectrum_range = power_spectrum(freq_indices);
     freq_range = freq(freq_indices);
     
     % Calculate LF power
-    %lf_band = freq_range >= 0.04 & freq_range <= 0.15;
     lf_band = freq_range >= 0.04 & freq_range <= 0.15;
     lf_power = trapz(power_spectrum_range(lf_band));
     
     % Calculate HF power
-    %hf_band = freq_range > 0.15 & freq_range <= max_freq;
-    hf_band = freq_ran > 0.15 & freq <= 0.4;
+    hf_band = freq_range > 0.15 & freq_range <= 0.4;
     hf_power = trapz(power_spectrum_range(hf_band));
-
-     % Define frequency bands of interest
     
-    
-
     % Calculate total power
     total_power = trapz(power_spectrum_range);
     
@@ -516,7 +522,9 @@ if ~isempty(rr_intervals_valid)
     lf_normalized_power = lf_power / total_power;
     hf_normalized_power = hf_power / total_power;
     
-    % Display frequency-domain HRV results
+    % Display FFT frequency-domain HRV results
+    
+    disp('FFT frequency domain analysis results.');
     disp(['LF Power: ', num2str(lf_power)]);
     disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
     disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
@@ -543,8 +551,7 @@ else
     disp('No valid RR intervals for frequency domain analysis.');
 end
 
-
 %% Signal for saving
 
 % Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
-%save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
+%save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered', 'rr_intervals_valid');

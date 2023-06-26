@@ -87,34 +87,34 @@ ylabel('PSD (dB/Hz)');
 % % Apply the low-pass filter
 % ecg_filtered = filtfilt(b_low, a_low, ecg_notch);
 
+% %% Test filter as per http://www.ijstr.org/final-print/dec2019/Digital-Iir-Filters-For-Heart-Rate-Variability-A-Comparison-Between-Butterworth-And-Elliptic-Filters.pdf
+% 
+% % Define the filter specifications
+% passband_freq = 0.8;   % Passband frequency in Hz
+% stopband_freq = 20;    % Stopband frequency in Hz
+% passband_ripple = 0;   % Passband ripple in dB
+% stopband_attenuation = 80;   % Stopband attenuation in dB
+% 
+% % Normalize the frequencies
+% normalized_passband_freq = passband_freq / (fs/2);
+% normalized_stopband_freq = stopband_freq / (fs/2);
+% 
+% % Design the Butterworth bandpass filter
+% [b, a] = butter(10, [normalized_passband_freq, normalized_stopband_freq], 'bandpass');
+% 
+% % Apply the filter to the ECG signal
+% ecg_filtered = filtfilt(b, a, ecg);
+
 %% Test new butterworth to avoid producing negative voltages
 
 % Define the filter parameters
 high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
-low_cutoff = 20;   % Low-pass filter cutoff frequency in Hz
+low_cutoff = 60;   % Low-pass filter cutoff frequency in Hz
 
 % Design the Butterworth filters
 [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
 [b_low, a_low] = butter(2, low_cutoff/(fs/2), 'low');
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % Apply the high-pass filter forward
-% ecg_high_forward = filter(b_high, a_high, ecg);
-% 
-% % Apply the high-pass filter backward
-% ecg_high_backward = filter(b_high, a_high, ecg_high_forward(end:-1:1));
-% ecg_high_backward = ecg_high_backward(end:-1:1);
-% 
-% % Apply the low-pass filter forward
-% ecg_filtered_forward = filter(b_low, a_low, ecg_high_backward);
-% 
-% % Apply the low-pass filter backward
-% ecg_filtered_backward = filter(b_low, a_low, ecg_filtered_forward(end:-1:1));
-% ecg_filtered_backward = ecg_filtered_backward(end:-1:1);
-% 
-% % Adjust the baseline voltage
-% ecg_baseline = mean(ecg);
-% ecg_filtered = ecg_filtered_backward + ecg_baseline;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Apply the high-pass filter
 ecg_high = filtfilt(b_high, a_high, ecg);
 
@@ -412,7 +412,9 @@ if ~isempty(rr_intervals_valid)
     lf_normalized_power = lf_power / total_power;
     hf_normalized_power = hf_power / total_power;
 
-    % Display frequency-domain HRV results
+    % Display PSD frequency-domain HRV results
+    
+    disp('PSD frequency domain analysis results.');
     disp(['LF Power: ', num2str(lf_power)]);
     disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
     disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
@@ -520,7 +522,9 @@ if ~isempty(rr_intervals_valid)
     lf_normalized_power = lf_power / total_power;
     hf_normalized_power = hf_power / total_power;
     
-    % Display frequency-domain HRV results
+    % Display FFT frequency-domain HRV results
+    
+    disp('FFT frequency domain analysis results.');
     disp(['LF Power: ', num2str(lf_power)]);
     disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
     disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
@@ -550,4 +554,4 @@ end
 %% Signal for saving
 
 % Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
-%save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered');
+%save(fullfile(pathname, 'pilot003_run1_ECG.mat'), 'ecg', 'ecg_filtered', 'rr_intervals_valid');
