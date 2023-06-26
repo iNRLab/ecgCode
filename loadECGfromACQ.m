@@ -365,7 +365,7 @@ if ~isempty(rr_intervals_valid)
     % Compute power spectral density (PSD) of RR intervals with increased resolution
     [psd, freq] = pwelch(rr_intervals_valid, [], [], freq_points, fs);
 
-   % Define frequency bands of interest
+    % Define frequency bands of interest
     lf_band = freq >= 0.04 & freq <= 0.15;
     hf_band = freq > 0.15 & freq <= 0.4;
 
@@ -439,6 +439,113 @@ else
 end
 
 %% TEST
+
+% Perform FFT-based frequency domain analysis only if valid RR intervals exist
+if ~isempty(rr_intervals_valid)
+    
+    % Compute the FFT of RR intervals
+    fft_data = fft(rr_intervals_valid);
+    
+    % Compute the single-sided power spectrum
+    power_spectrum = abs(fft_data).^2 / length(rr_intervals_valid);
+    
+    % Define the frequency range of interest
+    min_freq = 0.04;  % Minimum frequency in Hz
+    max_freq = 0.4;   % Maximum frequency in Hz
+    
+    % % Compute the corresponding frequency values
+    % freq_resolution = fs / length(fft_data);  % Frequency resolution
+    % freq = (0:length(fft_data)-1) * freq_resolution;
+
+    % Define the desired frequency resolution
+    frequency_resolution = 0.001; % Specify the desired frequency resolution in Hz
+
+    % Generate a higher resolution frequency vector
+    freq = (min_freq:frequency_resolution:max_freq);
+
+    % Find the indices corresponding to the frequency range of interest
+    freq_indices = freq >= min_freq & freq <= max_freq;
+    
+    % Find the indices corresponding to the frequency range of interest
+    %freq_indices = freq >= min_freq & freq <= max_freq;
+    
+    % Extract the power spectrum and frequency values within the specified range
+    power_spectrum_range = power_spectrum(freq_indices);
+    freq_range = freq(freq_indices);
+    
+    % Calculate LF power
+    lf_band = freq_range >= 0.04 & freq_range <= 0.15;
+    lf_power = trapz(power_spectrum_range(lf_band));
+    
+    % Calculate HF power
+    hf_band = freq_range > 0.15 & freq_range <= 0.4;
+    hf_power = trapz(power_spectrum_range(hf_band));
+    
+    % Calculate total power
+    total_power = trapz(power_spectrum_range);
+    
+    % Calculate LF/HF ratio
+    lf_hf_ratio = lf_power / hf_power;
+    
+    % Calculate peak frequency for LF band
+    [~, lf_peak_idx] = max(power_spectrum_range(lf_band));
+    lf_peak_freq = freq_range(lf_band);
+    lf_peak_freq = lf_peak_freq(lf_peak_idx);
+    
+    % Calculate peak frequency for HF band
+    if any(hf_band)
+        [~, hf_peak_idx] = max(power_spectrum_range(hf_band));
+        hf_peak_freq = freq_range(hf_band);
+        hf_peak_freq = hf_peak_freq(hf_peak_idx);
+    else
+        hf_peak_freq = NaN;
+    end
+    
+    % Calculate power in ms^2 for LF band
+    lf_power_ms2 = lf_power * (1 / fs) * 1000;
+    
+    % Calculate power in ms^2 for HF band
+    hf_power_ms2 = hf_power * (1 / fs) * 1000;
+    
+    % Calculate log power for LF and HF bands
+    lf_log_power = 10 * log10(lf_power);
+    hf_log_power = 10 * log10(hf_power);
+    
+    % Calculate % total power for LF and HF bands
+    lf_percent_total_power = (lf_power / total_power) * 100;
+    hf_percent_total_power = (hf_power / total_power) * 100;
+    
+    % Calculate power in normalized units for LF and HF bands
+    lf_normalized_power = lf_power / total_power;
+    hf_normalized_power = hf_power / total_power;
+    
+    % Display frequency-domain HRV results
+    disp(['LF Power: ', num2str(lf_power)]);
+    disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
+    disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
+    disp(['LF Log Power: ', num2str(lf_log_power), ' dB']);
+    disp(['LF Power (% Total Power): ', num2str(lf_percent_total_power), ' %']);
+    disp(['LF Power (Normalized Units): ', num2str(lf_normalized_power)]);
+    
+    disp(['HF Power: ', num2str(hf_power)]);
+    disp(['HF Peak Frequency: ', num2str(hf_peak_freq), ' Hz']);
+    disp(['HF Power (ms^2): ', num2str(hf_power_ms2), ' ms^2']);
+    disp(['HF Log Power: ', num2str(hf_log_power), ' dB']);
+    disp(['HF Power (% Total Power): ', num2str(hf_percent_total_power), ' %']);
+    disp(['HF Power (Normalized Units): ', num2str(hf_normalized_power)]);
+    
+    % Plot the power spectrum
+    figure;
+    plot(freq_range, 10*log10(power_spectrum_range));
+    title('Power Spectrum of RR Intervals');
+    xlabel('Frequency (Hz)');
+    ylabel('Power (dB)');
+    grid on;
+    
+else
+    disp('No valid RR intervals for frequency domain analysis.');
+end
+
 
 %% Signal for saving
 
