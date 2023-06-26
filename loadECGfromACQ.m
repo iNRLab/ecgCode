@@ -27,8 +27,9 @@ cd(pathname)
 % Display the size of loaded data
 disp(size(data));
 
-% load ECG data
+% load ECG data & MR trigger markers
 ecg = data(:, 1);
+mrk = data(:, 4);
 
 % visualize raw input signal
 figure; 
@@ -218,13 +219,37 @@ xlabel('Time (s)');
 ylabel('Voltage (mV)');
 legend('Filtered ECG', 'R Peaks');
 
+%% Compute R-R interval tachogram (values not correct)
+
+% Find R peaks in the filtered ECG signal
+[pks, locs] = findpeaks(ecg_filtered, 'MinPeakHeight', min(ecg_filtered) + 0.5 * (max(ecg_filtered) - min(ecg_filtered)), 'MinPeakDistance', 0.5 * fs);
+
+% Compute the time differences between consecutive R peaks (R-R intervals) in milliseconds
+rr_intervals = diff(locs) * 1000 / fs;
+
+% Compute the time differences between consecutive R peaks (R-R intervals) in seconds
+rr_intervals_sec = diff(locs) / fs;
+
+% Generate time vector for x-axis
+time = (locs(1:end-1) - 1) / fs;
+
+% Plot the R-R interval tachogram
+figure;
+plot(time, rr_intervals, 'b.-');
+title('R-R Interval Tachogram');
+xlabel('Time (s)');
+ylabel('R-R Interval Duration (ms)');
+
 %% Heart Rate Variability Analysis (values not correct)
 
-% Calculate R-R intervals using the global R peak locations
-rr_intervals = diff(locs) / fs;
+% Calculate R-R intervals using the global R peak locations in milliseconds
+rr_intervals = diff(locs) * 1000 / fs;
 
 % Calculate average heart rate (beats per minute)
-heart_rate = 60 / mean(rr_intervals);
+heart_rate = 60 / mean(rr_intervals_sec);
+
+% Display heart rate
+disp(['Average Heart Rate: ', num2str(heart_rate), ' beats per minute']);
 
 % Perform additional HRV analysis (e.g., time-domain or frequency-domain analysis)
 
