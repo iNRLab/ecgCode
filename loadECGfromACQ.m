@@ -351,10 +351,10 @@ disp(['pNN50: ', num2str(pnn50), ' %']);
 %% Frequency-domain HRV analysis
 
     % Define the desired frequency resolution
-    frequency_resolution = 0.01; % Specify the desired frequency resolution in Hz
+    frequency_resolution = 0.001; % Specify the desired frequency resolution in Hz
 
     % Define the frequency range of interest
-    frequency_range = [0, 1]; % Specify the frequency range of interest in Hz
+    frequency_range = [.04, .4]; % Specify the frequency range of interest in Hz
 
     % Generate a higher resolution frequency vector
     freq_points = frequency_range(1):frequency_resolution:frequency_range(2);
@@ -381,14 +381,51 @@ if ~isempty(rr_intervals_valid)
     % Calculate LF/HF ratio
     lf_hf_ratio = lf_power / hf_power;
 
+    % Calculate peak frequency for LF band
+    [~, lf_peak_idx] = max(psd(lf_band));
+    lf_peak_freq = freq(lf_band);
+    lf_peak_freq = lf_peak_freq(lf_peak_idx);
+
+    % Calculate peak frequency for HF band
+    [~, hf_peak_idx] = max(psd(hf_band));
+    hf_peak_freq = freq(hf_band);
+    hf_peak_freq = hf_peak_freq(hf_peak_idx);
+
+    % Calculate power in ms^2 for LF band
+    lf_power_ms2 = lf_power * (1 / fs) * 1000;
+
+    % Calculate power in ms^2 for HF band
+    hf_power_ms2 = hf_power * (1 / fs) * 1000;
+
+    % Calculate log power for LF and HF bands
+    lf_log_power = 10 * log10(lf_power);
+    hf_log_power = 10 * log10(hf_power);
+
     % desired_frequency = 0.04;  % Desired frequency in Hz
     % [~, index] = min(abs(freq - desired_frequency));  % Find the index of the closest frequency value
 
+    % Calculate % total power for LF and HF bands
+    lf_percent_total_power = (lf_power / total_power) * 100;
+    hf_percent_total_power = (hf_power / total_power) * 100;
+
+    % Calculate power in normalized units for LF and HF bands
+    lf_normalized_power = lf_power / total_power;
+    hf_normalized_power = hf_power / total_power;
+
     % Display frequency-domain HRV results
     disp(['LF Power: ', num2str(lf_power)]);
+    disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
+    disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
+    disp(['LF Log Power: ', num2str(lf_log_power), ' dB']);
+    disp(['LF Power (% Total Power): ', num2str(lf_percent_total_power), ' %']);
+    disp(['LF Power (Normalized Units): ', num2str(lf_normalized_power)]);
+    
     disp(['HF Power: ', num2str(hf_power)]);
-    disp(['Total Power: ', num2str(total_power)]);
-    disp(['LF/HF Ratio: ', num2str(lf_hf_ratio)]);
+    disp(['HF Peak Frequency: ', num2str(hf_peak_freq), ' Hz']);
+    disp(['HF Power (ms^2): ', num2str(hf_power_ms2), ' ms^2']);
+    disp(['HF Log Power: ', num2str(hf_log_power), ' dB']);
+    disp(['HF Power (% Total Power): ', num2str(hf_percent_total_power), ' %']);
+    disp(['HF Power (Normalized Units): ', num2str(hf_normalized_power)]);
 
     % Plot the power spectral density (PSD) of RR intervals
     figure;
@@ -400,6 +437,8 @@ if ~isempty(rr_intervals_valid)
 else
     disp('No valid RR intervals for power spectral density calculation.');
 end
+
+%% TEST
 
 %% Signal for saving
 
