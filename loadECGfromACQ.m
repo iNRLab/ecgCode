@@ -576,6 +576,100 @@ else
     disp('No valid RR intervals for frequency domain analysis.');
 end
 
+%% Test AR spectrum code
+
+% Perform autoregressive (AR) modeling for frequency domain HRV analysis
+if ~isempty(rr_intervals_valid)
+    
+    % Estimate the autoregressive (AR) model parameters
+    order = 16; % Specify the order of the AR model
+    ar_model = ar(rr_intervals_valid, order);
+    
+    % Compute the frequency response of the AR model
+    freq_response = freqz(ar_model.a, ar_model.c, freq_points, fs);
+    
+    % Compute the power spectral density (PSD) from the AR model frequency response
+    psd = abs(freq_response).^2;
+    freq = freq_points;
+    pmax_psd = max(psd);
+    pmin_psd = min(psd);
+    
+    % Define frequency bands of interest
+    lf_band = freq >= 0.04 & freq <= 0.15;
+    hf_band = freq > 0.15 & freq <= 0.4;
+    
+    % Calculate LF power
+    lf_power = trapz(psd(lf_band));
+
+    % Calculate HF power
+    hf_power = trapz(psd(hf_band));
+
+    % Calculate total power
+    total_power = trapz(psd);
+
+    % Calculate LF/HF ratio
+    lf_hf_ratio = lf_power / hf_power;
+
+    % Calculate peak frequency for LF band
+    [~, lf_peak_idx] = max(psd(lf_band));
+    lf_peak_freq = freq(lf_band);
+    lf_peak_freq = lf_peak_freq(lf_peak_idx);
+
+    % Calculate peak frequency for HF band
+    [~, hf_peak_idx] = max(psd(hf_band));
+    hf_peak_freq = freq(hf_band);
+    hf_peak_freq = hf_peak_freq(hf_peak_idx);
+
+    % Calculate power in ms^2 for LF band
+    lf_power_ms2 = lf_power * (1 / fs) * 1000;
+
+    % Calculate power in ms^2 for HF band
+    hf_power_ms2 = hf_power * (1 / fs) * 1000;
+
+    % Calculate log power for LF and HF bands
+    lf_log_power = 10 * log10(lf_power);
+    hf_log_power = 10 * log10(hf_power);
+
+    % Calculate % total power for LF and HF bands
+    lf_percent_total_power = (lf_power / total_power) * 100;
+    hf_percent_total_power = (hf_power / total_power) * 100;
+
+    % Calculate power in normalized units for LF and HF bands
+    lf_normalized_power = lf_power / total_power;
+    hf_normalized_power = hf_power / total_power;
+
+    % Display AR modeling frequency-domain HRV results
+    
+    disp('AR modeling frequency domain analysis results.');
+    disp(['LF Power: ', num2str(lf_power)]);
+    disp(['LF Peak Frequency: ', num2str(lf_peak_freq), ' Hz']);
+    disp(['LF Power (ms^2): ', num2str(lf_power_ms2), ' ms^2']);
+    disp(['LF Log Power: ', num2str(lf_log_power), ' dB']);
+    disp(['LF Power (% Total Power): ', num2str(lf_percent_total_power), ' %']);
+    disp(['LF Power (Normalized Units): ', num2str(lf_normalized_power)]);
+    
+    disp(['HF Power: ', num2str(hf_power)]);
+    disp(['HF Peak Frequency: ', num2str(hf_peak_freq), ' Hz']);
+    disp(['HF Power (ms^2): ', num2str(hf_power_ms2), ' ms^2']);
+    disp(['HF Log Power: ', num2str(hf_log_power), ' dB']);
+    disp(['HF Power (% Total Power): ', num2str(hf_percent_total_power), ' %']);
+    disp(['HF Power (Normalized Units): ', num2str(hf_normalized_power)]);
+
+    % Plot the power spectral density (PSD) of RR intervals
+    figure;
+    plot(freq, pow2db(psd));
+    hold on
+    %plot(freq, pow2db([pmax_psd, pmin_psd]), ':');
+    hold off
+    title('Power Spectral Density (PSD) of RR Intervals (AR Modeling)');
+    xlabel('Frequency (Hz)');
+    ylabel('PSD (dB/Hz)');
+    grid on;
+else
+    disp('No valid RR intervals for AR modeling and power spectral density calculation.');
+end
+
+
 %% Signal for saving
 
 % Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
