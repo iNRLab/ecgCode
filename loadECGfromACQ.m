@@ -69,6 +69,7 @@ grid on;
 title('Power Spectral Density of ECG Signal');
 
 %% Define and apply Zero-phase Butterworth IIR Bandpass Filter 
+% https://www.mathworks.com/matlabcentral/answers/493660-how-do-you-design-your-ecg-bandpass
 
 % % High-pass filter cutoff frequency (Hz) (test from 0.5hz)
 % high_cutoff = 0.04;
@@ -119,8 +120,8 @@ title('Power Spectral Density of ECG Signal');
 %% Test new butterworth to avoid producing negative voltages
 
 % Define the filter parameters
-high_cutoff = 0.04;  % High-pass filter cutoff frequency in Hz
-low_cutoff = 60;   % Low-pass filter cutoff frequency in Hz
+high_cutoff = 0.004;  % High-pass filter cutoff frequency in Hz
+low_cutoff = 50;   % Low-pass filter cutoff frequency in Hz
 
 % Design the Butterworth filters
 [b_high, a_high] = butter(2, high_cutoff/(fs/2), 'high');
