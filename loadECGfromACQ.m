@@ -44,18 +44,29 @@ fs = 5000;
 
 % Compute the power spectral density of the ECG signal
 [pxx, f] = pwelch(ecg, [], [], [], fs, 'onesided');
+pmax = pwelch(ecg,[],[],[],fs,'maxhold');
+pmin = pwelch(ecg,[],[],[],fs,'minhold');
 
-% Find the maximum and minimum values of the PSD
+% Find the maximum and minimum values of the PSD % think this is redundant
+% with lines 47-48 above
+
 [max_pxx, max_idx] = max(pxx);
 [min_pxx, min_idx] = min(pxx);
 
 % Plot the power spectral density
 figure;
-plot(f, 10*log10(pxx));
+%plot(f, 10*log10(pxx)); % unsure of difference between 10*log10(pxx) and
+%pow2db(pxx), believe that they are equivalent approaches
+hold on
+plot(f,pow2db(pxx))
+hold on
+plot(f,pow2db([pmax pmin]),':')
+hold off
+xlabel('Frequency (Hz)')
+ylabel('PSD (dB/Hz)')
+legend('pwelch','maxhold','minhold')
 grid on;
 title('Power Spectral Density of ECG Signal');
-xlabel('Frequency (Hz)');
-ylabel('PSD (dB/Hz)');
 
 %% Define and apply Zero-phase Butterworth IIR Bandpass Filter 
 
@@ -163,10 +174,17 @@ hold off;
 
 %% Compute the power spectral density of the filtered ECG signal
 [pxx_filt, f_filt] = pwelch(ecg_filtered, [], [], [], fs, 'onesided');
+pmax_filt = pwelch(ecg_filtered,[],[],[],fs,'maxhold');
+pmin_filt = pwelch(ecg_filtered,[],[],[],fs,'minhold');
 
 % Plot the power spectral density of the filtered ECG signal
 figure;
-plot(f_filt, 10*log10(pxx_filt));
+%plot(f_filt, 10*log10(pxx_filt));
+hold on
+plot(f_filt,pow2db(pxx_filt))
+hold on
+plot(f_filt,pow2db([pmax_filt pmin_filt]),':')
+hold off
 grid on;
 title('Power Spectral Density of Filtered ECG Signal');
 xlabel('Frequency (Hz)');
@@ -364,7 +382,9 @@ if ~isempty(rr_intervals_valid)
     
     % Compute power spectral density (PSD) of RR intervals with increased resolution
     [psd, freq] = pwelch(rr_intervals_valid, [], [], freq_points, fs);
-
+    pmax_psd = pwelch(rr_intervals_valid,[],[],freq_points,fs,'maxhold');
+    pmin_psd = pwelch(rr_intervals_valid,[],[],freq_points,fs,'minhold');
+    
     % Define frequency bands of interest
     lf_band = freq >= 0.04 & freq <= 0.15;
     hf_band = freq > 0.15 & freq <= 0.4;
@@ -431,7 +451,12 @@ if ~isempty(rr_intervals_valid)
 
     % Plot the power spectral density (PSD) of RR intervals
     figure;
-    plot(freq, 10*log10(psd));
+    %plot(freq, 10*log10(psd));
+    hold on
+    plot(freq,pow2db(psd))
+    hold on
+    %plot(freq,pow2db([pmax_psd pmin_psd])); %,':')
+    hold off
     title('Power Spectral Density (PSD) of RR Intervals');
     xlabel('Frequency (Hz)');
     ylabel('PSD (dB/Hz)');
