@@ -311,10 +311,20 @@ ylabel('R-R Interval Duration (ms)');
 
 % Apply filtering to remove implausible values
 rr_intervals_filtered = rr_intervals;
-rr_intervals_filtered(rr_intervals < 500 | rr_intervals > 1800) = NaN;
+%rr_intervals_filtered(rr_intervals < 500 | rr_intervals > 1800) = NaN; %
+%double check this for 1500 vs 1800
+rr_intervals_filtered(rr_intervals < 500 | rr_intervals > 1500) = NaN;
 
 % Interpolate over removed values using cubic spline interpolation
 rr_intervals_corrected = interp1(time, rr_intervals_filtered, time, 'pchip');
+
+% %% Test tachogram band pass filter
+% 
+% % Apply the high-pass filter
+% rr_intervals_corrected_high = filtfilt(b_high, a_high, rr_intervals_corrected);
+% 
+% % Apply the low-pass filter
+% rr_intervals_corrected = filtfilt(b_low, a_low, rr_intervals_corrected_high);
 
 % Plot the corrected R-R interval tachogram
 figure;
