@@ -31,6 +31,67 @@ disp(size(data));
 ecg = data(:, 1);
 mrk = data(:, 4);
 
+% Sampling rate in Hz
+fs = 5000;
+
+% TR in seconds
+TR = 1.5;
+
+% %% Parse ECG by MR marker
+% 
+% % Find the indices of positive and negative values in 'mrk'
+% positive_indices = find(mrk > 0);
+% negative_indices = find(mrk <= 0);
+% 
+% % Initialize a cell array to store the series of positive values
+% positive_series = cell(0);
+% 
+% % Find the indices where positive series start
+% start_indices = positive_indices([true; diff(positive_indices) > 1]);
+% 
+% % Iterate through the start indices to extract positive series
+% for i = 1:length(start_indices)
+%     start_index = start_indices(i);
+% 
+%     % Find the next negative index or the end of positive indices
+%     if i < length(start_indices)
+%         next_negative_index = find(negative_indices > start_indices(i), 1);
+%         end_index = negative_indices(next_negative_index) - 1;
+%     else
+%         end_index = length(mrk);
+%     end
+% 
+%     % Check if the length of the negative series is greater than 2 TR
+%     if end_index - start_index + 1 > round(2*TR*fs)
+%         positive_series{end+1} = start_index:end_index;
+%     end
+% end
+% 
+% % Extract the corresponding portions of the 'ecg' signal for each positive series
+% ecg_localizer_series = cell(0);
+% for i = 1:length(positive_series)
+%     series_indices = positive_series{i};
+%     ecg_localizer_series{i} = ecg(series_indices);
+% end
+% 
+% % Combine the series into a single array
+% ecg_localizer = cat(1, ecg_localizer_series{:});
+% 
+% % Create a time vector in seconds
+% time = (0:length(ecg_localizer)-1) / fs;
+% 
+% % Plot the ecg_localizer_series
+% plot(time, ecg_localizer)
+% xlabel('Time (s)')
+% ylabel('ECG')
+% title('ECG Localizer Series')
+% 
+% keyboard
+% 
+% ecg = ecg_localizer;
+
+%% Visualize raw ECG signal and PSD
+
 % visualize raw input signal
 figure; 
 % ax1 = subplot(1,4,1);
@@ -38,9 +99,6 @@ plot(ecg);
 title('Unfiltered ECG Signal Lead I');
 xlabel('time in ms'); ylabel('voltage in mV');
 hold all; 
-
-% Sampling rate
-fs = 5000;
 
 % Compute the power spectral density of the ECG signal
 [pxx, f] = pwelch(ecg, [], [], [], fs, 'onesided');
