@@ -76,4 +76,5 @@ title('Power Spectral Density of EDA Signal');
 %% Signal for saving
 
 %Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
-save(fullfile(pathname, 'LRN001_rest_run1_EDA.mat'), 'eda');
+%save(fullfile(pathname, 'LRN001_rest_run1_EDA.mat'), 'eda');
+save(fullfile(pathname, 'LRN001_rest_run1_EDA_test.mat'), 'data');
