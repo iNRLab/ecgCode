@@ -34,17 +34,6 @@ mrk = data(:, 4);
 % Sampling rate in Hz
 fs = 5000;
 
-% calculate the time step per sample in seconds
-time_step_s = 1/5000; 
-
-% convert the time step to milliseconds
-time_step_ms = time_step_s * 1000; 
-
-% create a vector of time steps in ms
-time_ms = (0:time_step_ms:((length(eda)-1)*time_step_ms))';
-
-time = time_ms;
-
 % TR in seconds (Note Resting State 2.0 seconds and Task 1.5 sec have different TRs)
 TR = 2.0;
 
@@ -88,4 +77,4 @@ title('Power Spectral Density of EDA Signal');
 
 %Save signals into a new .mat file (update to draw filename from loaded ACQ .mat export file)
 %save(fullfile(pathname, 'LRN001_rest_run1_EDA.mat'), 'eda');
-save(fullfile(pathname, 'LRN001_rest_run1_EDA_test.mat'), 'eda', 'time');
+save(fullfile(pathname, 'LRN001_rest_run1_EDA_test.mat'), 'data', 'fs');
